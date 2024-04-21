@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Load YOLO
 net = cv2.dnn.readNet("yolov4.cfg", "yolov4.weights")
@@ -8,7 +7,6 @@ layer_names = net.getLayerNames()
 output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
 # Load class names
-classes = []
 with open("coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
@@ -27,7 +25,8 @@ while True:
     input_tensor = np.expand_dims(input_tensor, axis=0)  # Add batch dimension
 
     # Perform object detection on the frame
-    net.setInput(cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False))
+    blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+    net.setInput(blob)
     outs = net.forward(output_layers)
 
     # Showing informations on the screen
@@ -54,6 +53,7 @@ while True:
                 confidences.append(float(confidence))
                 class_ids.append(class_id)
 
+    # Apply non-max suppression
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
 
     font = cv2.FONT_HERSHEY_PLAIN
@@ -65,11 +65,8 @@ while True:
             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
             cv2.putText(frame, label, (x, y + 30), font, 3, color, 3)
 
-    # Display the frame using matplotlib
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    plt.imshow(frame_rgb)
-    plt.title("Object Detection")
-    plt.show()
+    # Display the frame
+    cv2.imshow("Object Detection", frame)
 
     # Exit on 'q' key press
     if cv2.waitKey(1) & 0xFF == ord('q'):
